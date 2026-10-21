@@ -15,8 +15,8 @@ echo "::group::Install libraries"
 
     # Symbolic links for binutils dependencies
     cd $SOURCE_PATH/binutils
-    ln -sf $SOURCE_PATH/gcc/gmp gmp
-    ln -sf $SOURCE_PATH/gcc/mpfr mpfr
+    ln -sfn $SOURCE_PATH/gcc/gmp gmp
+    ln -sfn $SOURCE_PATH/gcc/mpfr mpfr
 
 echo "::endgroup::"
 

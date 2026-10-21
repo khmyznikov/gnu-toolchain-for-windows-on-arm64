@@ -2,20 +2,24 @@
 
 source `dirname ${BASH_SOURCE[0]}`/config.sh
 
-PROJECT=$1
+PROJECT=${1:-}
 
 function update_repository() {
     DIRECTORY=$1
     REPOSITORY=$2
     BRANCH=$3
-    BRANCH_HEAD=$4
+    BRANCH_HEAD=${4:-}
 
     if [[ ! $REPOSITORY =~ ^(http://|https://|git://) ]]; then
         REPOSITORY="https://github.com/$REPOSITORY.git"
     fi
 
     if [[ ! -d $DIRECTORY ]]; then
-        if [[ "$FLAT_CLONE" = 1 ]]; then
+        if [[ "$FLAT_CLONE" = 1 && -n "$BRANCH_HEAD" ]]; then
+            git init "$DIRECTORY"
+            git -C "$DIRECTORY" remote add origin "$REPOSITORY"
+            git -C "$DIRECTORY" fetch --depth 1 origin "$BRANCH_HEAD"
+        elif [[ "$FLAT_CLONE" = 1 ]]; then
             git clone $REPOSITORY -b $BRANCH --single-branch --depth 100 $DIRECTORY
         else
             git clone $REPOSITORY -b $BRANCH $DIRECTORY
@@ -34,7 +38,8 @@ echo "::group::Update source code repositories"
     if [[ -n "$PROJECT" ]]; then
         REPO=${PROJECT^^}_REPO
         BRANCH=${PROJECT^^}_BRANCH
-        update_repository $PROJECT ${!REPO} ${!BRANCH}
+        HEAD=${PROJECT^^}_HEAD
+        update_repository "$PROJECT" "${!REPO}" "${!BRANCH}" "${!HEAD:-}"
     else
         update_repository binutils $BINUTILS_REPO $BINUTILS_BRANCH $BINUTILS_HEAD
         update_repository gcc $GCC_REPO $GCC_BRANCH $GCC_HEAD

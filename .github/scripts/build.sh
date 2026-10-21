@@ -14,6 +14,15 @@ if [[ "$UPDATE_SOURCES" = 1 ]]; then
     $ROOT_PATH/.github/scripts/update-sources.sh
 fi
 
+if [[ "$HOST" == aarch64*-*-mingw* ]]; then
+    for PROJECT in binutils gcc; do
+        NATIVE_PATCH=$ROOT_PATH/.github/scripts/toolchain/$PROJECT-native-host.patch
+        if ! git -C "$SOURCE_PATH/$PROJECT" apply --reverse --check "$NATIVE_PATCH" 2>/dev/null; then
+            git -C "$SOURCE_PATH/$PROJECT" apply "$NATIVE_PATCH"
+        fi
+    done
+fi
+
 if [[ "$RUN_BOOTSTRAP" = 1 || "$RESET_SOURCES" = 1 ]]; then
     $ROOT_PATH/.github/scripts/install-libraries.sh
 fi
@@ -34,8 +43,11 @@ if [[ "$PLATFORM" =~ cygwin ]]; then
     $ROOT_PATH/.github/scripts/toolchain/install-cygwin-headers.sh
 fi
 
-if [[ "$BUILD" != "$TARGET" ]]; then
+# Canadian builds use the existing build-to-target cross-compiler.
+if [[ "$BUILD" != "$TARGET" && "$BUILD" = "$HOST" ]]; then
     $ROOT_PATH/.github/scripts/toolchain/build-gcc-stage1.sh
+elif [[ "$BUILD" != "$HOST" ]]; then
+    cp "$ROOT_PATH/.github/scripts/toolchain/toolchain.sh" "$TOOLCHAIN_PATH"
 fi
 
 if [[ "$PLATFORM" =~ (mingw|cygwin) ]]; then

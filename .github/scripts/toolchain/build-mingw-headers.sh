@@ -57,7 +57,7 @@ if [[ "$RUN_INSTALL" = 1 ]]; then
         case "$PLATFORM" in
             *mingw*)
                 # Symlink for gcc
-                ln -sf $TOOLCHAIN_PATH/$TARGET $TOOLCHAIN_PATH/mingw
+                ln -sfn $TOOLCHAIN_PATH/$TARGET $TOOLCHAIN_PATH/mingw
                 ;;
         esac
 

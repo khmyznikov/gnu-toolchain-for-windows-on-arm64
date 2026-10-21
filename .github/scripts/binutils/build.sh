@@ -37,13 +37,15 @@ if [[ "$RUN_CONFIG" = 1 ]] || [[ ! -f "$BINUTILS_BUILD_PATH/Makefile" ]]; then
             *mingw32*)
                 TARGET_OPTIONS="$TARGET_OPTIONS \
                     --disable-gdb \
+                    --disable-gdbserver \
+                    --disable-sim \
                     --without-zstd"
 
                 CFLAGS="$CFLAGS \
-                    -I$INSTALL_PATH/zlib/$TARGET/include \
+                    -I$ZLIB_PATH/include \
                     -Wno-error=unused-variable"
 
-                LDFLAGS="$LDFLAGS $INSTALL_PATH/zlib/$TARGET/lib/libz-static.a"
+                LDFLAGS="$LDFLAGS $ZLIB_PATH/lib/libz-static.a"
                 ;;
             *)
                 HOST_OPTIONS="$HOST_OPTIONS \

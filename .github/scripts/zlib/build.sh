@@ -2,7 +2,7 @@
 
 source `dirname ${BASH_SOURCE[0]}`/../config.sh
 
-ZLIB_BUILD_PATH=$ROOT_PATH/build/$TARGET/zlib
+ZLIB_BUILD_PATH=$ROOT_PATH/build/$TOOLCHAIN_NAME/zlib
 
 cd $SOURCE_PATH/zlib
 
@@ -12,6 +12,7 @@ if [[ "$RUN_CONFIG" = 1 ]] || [[ ! -f $ZLIB_BUILD_PATH/CMakeCache.txt ]]; then
         cmake -G"Unix Makefiles" \
             -DCMAKE_INSTALL_PREFIX=$ZLIB_PATH \
             -DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE \
+            -DZLIB_BUILD_TESTING=OFF \
             -B$ZLIB_BUILD_PATH
     echo "::endgroup::"
 fi
@@ -23,8 +24,15 @@ echo "::endgroup::"
 if [[ "$RUN_INSTALL" = 1 ]]; then
     echo "::group::Install zlib"
         cmake --install $ZLIB_BUILD_PATH
-        mv $ZLIB_PATH/lib/libzlibstatic.a $ZLIB_PATH/lib/libz-static.a
-        mv $ZLIB_PATH/lib/libzlib.dll.a $ZLIB_PATH/lib/libz.dll.a
+        if [[ -f $ZLIB_PATH/lib/libzlibstatic.a ]]; then
+            cp $ZLIB_PATH/lib/libzlibstatic.a $ZLIB_PATH/lib/libz-static.a
+        else
+            cp $ZLIB_PATH/lib/libzs.a $ZLIB_PATH/lib/libz-static.a
+        fi
+        if [[ -f $ZLIB_PATH/lib/libzlib.dll.a ]]; then
+            cp $ZLIB_PATH/lib/libzlib.dll.a $ZLIB_PATH/lib/libz.dll.a
+        fi
+        test -f $ZLIB_PATH/lib/libz.dll.a
     echo "::endgroup::"
 fi
 

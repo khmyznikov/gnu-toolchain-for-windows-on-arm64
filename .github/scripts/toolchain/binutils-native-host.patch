@@ -1,0 +1,20 @@
+diff --git a/ld/ldbuildid.c b/ld/ldbuildid.c
+--- a/ld/ldbuildid.c
++++ b/ld/ldbuildid.c
+@@ -178,14 +178,14 @@ generate_build_id (bfd *abfd, const char *style,
+       if (n < size)
+ 	return false;
+ #else /* __MINGW32__ */
+-      typedef RPC_STATUS (RPC_ENTRY * UuidCreateFn) (UUID *);
++      typedef __typeof__ (UuidCreate) *UuidCreateFn;
+       UUID          uuid;
+       UuidCreateFn  uuid_create = 0;
+       HMODULE       rpc_library = LoadLibrary ("rpcrt4.dll");
+ 
+       if (!rpc_library)
+ 	return false;
+-      uuid_create = (UuidCreateFn) (void (WINAPI *)(void)) GetProcAddress (rpc_library, "UuidCreate");
++      uuid_create = (UuidCreateFn) (void (*)(void)) GetProcAddress (rpc_library, "UuidCreate");
+       if (!uuid_create)
+ 	{
+ 	  FreeLibrary (rpc_library);

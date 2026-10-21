@@ -1,0 +1,121 @@
+name: UCRT Toolchain Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Linux-hosted and Windows-native Arm64 toolchains
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+
+    env:
+      CRT: ucrt
+      INSTALL_PATH: ${{ github.workspace }}/install
+      ARTIFACT_PATH: ${{ github.workspace }}/artifact
+      PACK_TOOLCHAIN: 1
+      DELETE_BUILD: 1
+      BINUTILS_REPO: https://sourceware.org/git/binutils-gdb.git
+      BINUTILS_HEAD: 91dc787c65d9f5f9aba59bcadbee8c3d14a53236
+      GCC_REPO: https://github.com/gcc-mirror/gcc.git
+      GCC_HEAD: dacd72c18fe6470601f59c70415df111871fbbd7
+      MINGW_REPO: https://github.com/mingw-w64/mingw-w64.git
+      MINGW_HEAD: b13721ccf8ba8da2441e059e536f91992109510b
+      ZLIB_HEAD: 767c4c947852e143f582c85f14cf573411df1b35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Linux-hosted and Windows-native UCRT toolchains
+        run: |
+          mkdir -p build/logs
+          ./build.sh --native-toolchain 2>&1 | tee build/logs/ucrt-build.log
+
+      - name: Cross-compile toolchain tests
+        env:
+          UPSTREAM_VALIDATION: 1
+        run: .github/scripts/tests/build.sh
+
+      - name: Verify Windows-native executable architecture
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import struct
+
+          root = Path(os.environ["INSTALL_PATH"]) / "toolchains" / "aarch64-w64-mingw32" / "aarch64-w64-mingw32-ucrt"
+          binaries = [path for path in root.rglob("*") if path.suffix.lower() in (".exe", ".dll") and path.is_file()]
+          required = {"gcc.exe", "g++.exe", "gfortran.exe", "as.exe", "ld.exe", "cc1.exe", "cc1plus.exe", "f951.exe", "lto1.exe"}
+          missing = required - {path.name for path in binaries}
+          if missing:
+              raise SystemExit(f"Missing native tools: {sorted(missing)}")
+          for path in binaries:
+              with path.open("rb") as stream:
+                  if stream.read(2) != b"MZ":
+                      raise SystemExit(f"Not a Windows executable: {path}")
+                  stream.seek(0x3C)
+                  offset = struct.unpack("<I", stream.read(4))[0]
+                  stream.seek(offset)
+                  signature, machine = struct.unpack("<4sH", stream.read(6))
+              if signature != b"PE\0\0" or machine != 0xAA64:
+                  raise SystemExit(f"Not a Windows Arm64 executable: {path}")
+          print(f"Verified {len(binaries)} Windows Arm64 executables and DLLs")
+          PY
+
+      - name: Package toolchains and record source revisions
+        run: |
+          TOOLCHAIN_PACKAGE_NAME=aarch64-w64-mingw32-ucrt-linux-arm64.tar.gz \
+            .github/scripts/toolchain/pack.sh
+          HOST=aarch64-w64-mingw32 \
+            TOOLCHAIN_PACKAGE_NAME=aarch64-w64-mingw32-ucrt-windows-arm64.tar.gz \
+            .github/scripts/toolchain/pack.sh
+          for project in binutils gcc mingw zlib; do
+            printf '%s %s\n' "$project" "$(git -C "code/$project" rev-parse HEAD)"
+          done > "$ARTIFACT_PATH/source-revisions.txt"
+          sha256sum .github/scripts/toolchain/binutils-native-host.patch \
+            .github/scripts/toolchain/gcc-native-host.patch \
+            >> "$ARTIFACT_PATH/source-revisions.txt"
+          cd "$ARTIFACT_PATH"
+          for package in aarch64-w64-mingw32-ucrt-linux-arm64.tar.gz \
+            aarch64-w64-mingw32-ucrt-windows-arm64.tar.gz; do
+            sha256sum "$package" > "$package.sha256"
+          done
+
+      - name: Upload Linux-hosted cross-toolchain
+        uses: actions/upload-artifact@v4
+        with:
+          name: aarch64-w64-mingw32-ucrt-linux-arm64
+          path: |
+            ${{ env.ARTIFACT_PATH }}/aarch64-w64-mingw32-ucrt-linux-arm64.tar.gz*
+            ${{ env.ARTIFACT_PATH }}/source-revisions.txt
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload Windows-native toolchain
+        uses: actions/upload-artifact@v4
+        with:
+          name: aarch64-w64-mingw32-ucrt-windows-arm64
+          path: |
+            ${{ env.ARTIFACT_PATH }}/aarch64-w64-mingw32-ucrt-windows-arm64.tar.gz*
+            ${{ env.ARTIFACT_PATH }}/source-revisions.txt
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ucrt-build-logs
+          path: build/logs
+          if-no-files-found: ignore
+          retention-days: 3

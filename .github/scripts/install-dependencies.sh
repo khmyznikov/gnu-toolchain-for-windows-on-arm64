@@ -19,6 +19,7 @@ echo "::group::Install Dependencies"
       build-essential \
       busybox \
       ccache \
+      cmake \
       dejagnu \
       docbook2x \
       flex \

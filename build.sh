@@ -14,6 +14,7 @@ if [[ " $* " == *" --native-toolchain "* ]]; then
   echo "Build the native toolchain"
   TOOLCHAIN_PATH=$(source .github/scripts/config.sh; echo $TOOLCHAIN_PATH)
   PATH_EXT=$TOOLCHAIN_PATH/lib/ccache:$TOOLCHAIN_PATH/bin:$PATH
+  .github/scripts/update-sources.sh zlib
   PATH=$PATH_EXT .github/scripts/zlib/build.sh
   PATH=$PATH_EXT HOST=aarch64-w64-mingw32 .github/scripts/build.sh
 fi

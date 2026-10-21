@@ -1,0 +1,76 @@
+diff --git a/fixincludes/configure b/fixincludes/configure
+--- a/fixincludes/configure
++++ b/fixincludes/configure
+@@ -4820,6 +4820,7 @@ else
+ 	i?86-*-msdosdjgpp* | \
+ 	i?86-*-mingw32* | \
+ 	x86_64-*-mingw32* | \
++	aarch64*-*-mingw32* | \
+ 	*-*-beos* | \
+         *-*-*vms*)
+ 		TARGET=twoprocess
+diff --git a/fixincludes/configure.ac b/fixincludes/configure.ac
+--- a/fixincludes/configure.ac
++++ b/fixincludes/configure.ac
+@@ -53,6 +53,7 @@ fi],
+ 	i?86-*-msdosdjgpp* | \
+ 	i?86-*-mingw32* | \
+ 	x86_64-*-mingw32* | \
++	aarch64*-*-mingw32* | \
+ 	*-*-beos* | \
+         *-*-*vms*)
+ 		TARGET=twoprocess
+diff --git a/gcc/config.build b/gcc/config.build
+--- a/gcc/config.build
++++ b/gcc/config.build
+@@ -57,7 +57,7 @@ case $build in
+     build_xm_file=i386/xm-cygwin.h
+     build_exeext=.exe
+     ;;
+-  i[34567]86-*-mingw32* | x86_64-*-mingw*)
++  i[34567]86-*-mingw32* | x86_64-*-mingw* | aarch64*-*-mingw*)
+     build_xm_file=i386/xm-mingw32.h
+     build_exeext=.exe
+     t=`(CMD //c echo /c) 2>/dev/null`
+diff --git a/gcc/config.host b/gcc/config.host
+--- a/gcc/config.host
++++ b/gcc/config.host
+@@ -100,7 +100,7 @@ esac
+ 
+ case ${host} in
+   aarch64*-*-freebsd* | aarch64*-*-linux* | aarch64*-*-fuchsia* |\
+-  aarch64*-*-darwin*)
++  aarch64*-*-darwin* | aarch64*-*-mingw*)
+     case ${target} in
+       aarch64*-*-*)
+ 	host_extra_gcc_objs="driver-aarch64.o"
+@@ -238,7 +238,7 @@ case ${host} in
+     host_exeext=.exe
+     host_lto_plugin_soname=cyglto_plugin.dll
+     ;;
+-  i[34567]86-*-mingw32* | x86_64-*-mingw*)
++  i[34567]86-*-mingw32* | x86_64-*-mingw* | aarch64*-*-mingw*)
+     host_xm_file=i386/xm-mingw32.h
+     host_xmake_file="${host_xmake_file} ${host_xmake_mingw} i386/x-mingw32"
+     host_extra_gcc_objs="${host_extra_gcc_objs} ${host_extra_gcc_objs_mingw} driver-mingw32.o"
+@@ -247,7 +247,7 @@ case ${host} in
+     out_host_hook_obj=host-mingw32.o
+     host_lto_plugin_soname=liblto_plugin.dll
+     case ${host} in
+-      x86_64-*-*)
++      x86_64-*-* | aarch64*-*-*)
+         use_long_long_for_widest_fast_int=yes
+         ;;
+     esac
+diff --git a/libcpp/lex.cc b/libcpp/lex.cc
+--- a/libcpp/lex.cc
++++ b/libcpp/lex.cc
+@@ -692,7 +692,7 @@ search_line_neon (const uchar *s, const uchar *end ATTRIBUTE_UNUSED)
+       t = (uint16x8_t) vceqq_u8 (vqtbl1q_u8 (tab, vandq_u8 (d, m)), d);
+       mask = vget_lane_u64 ((uint64x1_t)vaddhn_u16 (t, t), 0);
+       if (mask != 0)
+-	return s + (__builtin_ctzl (mask & 0x1111111111111111UL) >> 2);
++	return s + (__builtin_ctzll (mask & 0x1111111111111111ULL) >> 2);
+       s += 16;
+       d = vld1q_u8 (s);
+     }

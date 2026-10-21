@@ -31,8 +31,8 @@ if [[ "$RUN_CONFIG" = 1 ]] || [[ ! -f "$GCC_BUILD_PATH/Makefile" ]]; then
                 TARGET_OPTIONS="$TARGET_OPTIONS \
                     --without-zstd"
 
-                CFLAGS="$CFLAGS -I$INSTALL_PATH/zlib/$TARGET/include"
-                LDFLAGS="$LDFLAGS -Wl,--dynamicbase,--nxcompat,--high-entropy-va $INSTALL_PATH/zlib/$TARGET/lib/libz-static.a"
+                CFLAGS="$CFLAGS -I$ZLIB_PATH/include"
+                LDFLAGS="$LDFLAGS -Wl,--dynamicbase,--nxcompat,--high-entropy-va $ZLIB_PATH/lib/libz-static.a"
                 ;;
             *)
                 HOST_OPTIONS="$HOST_OPTIONS \
