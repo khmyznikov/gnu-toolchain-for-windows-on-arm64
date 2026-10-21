@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   build:
-    name: Linux-hosted and Windows-native Arm64 toolchains
+    name: Windows-native Arm64 UCRT toolchain
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
 
@@ -34,7 +34,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Linux-hosted and Windows-native UCRT toolchains
+      - name: Bootstrap cross-compiler and build Windows-native UCRT toolchain
         run: |
           mkdir -p build/logs
           ./build.sh --native-toolchain 2>&1 | tee build/logs/ucrt-build.log
@@ -70,10 +70,8 @@ jobs:
           print(f"Verified {len(binaries)} Windows Arm64 executables and DLLs")
           PY
 
-      - name: Package toolchains and record source revisions
+      - name: Package Windows-native toolchain and record source revisions
         run: |
-          TOOLCHAIN_PACKAGE_NAME=aarch64-w64-mingw32-ucrt-linux-arm64.tar.gz \
-            .github/scripts/toolchain/pack.sh
           HOST=aarch64-w64-mingw32 \
             TOOLCHAIN_PACKAGE_NAME=aarch64-w64-mingw32-ucrt-windows-arm64.tar.gz \
             .github/scripts/toolchain/pack.sh
@@ -84,21 +82,8 @@ jobs:
             .github/scripts/toolchain/gcc-native-host.patch \
             >> "$ARTIFACT_PATH/source-revisions.txt"
           cd "$ARTIFACT_PATH"
-          for package in aarch64-w64-mingw32-ucrt-linux-arm64.tar.gz \
-            aarch64-w64-mingw32-ucrt-windows-arm64.tar.gz; do
-            sha256sum "$package" > "$package.sha256"
-          done
-
-      - name: Upload Linux-hosted cross-toolchain
-        uses: actions/upload-artifact@v4
-        with:
-          name: aarch64-w64-mingw32-ucrt-linux-arm64
-          path: |
-            ${{ env.ARTIFACT_PATH }}/aarch64-w64-mingw32-ucrt-linux-arm64.tar.gz*
-            ${{ env.ARTIFACT_PATH }}/source-revisions.txt
-          compression-level: 0
-          if-no-files-found: error
-          retention-days: 3
+          package=aarch64-w64-mingw32-ucrt-windows-arm64.tar.gz
+          sha256sum "$package" > "$package.sha256"
 
       - name: Upload Windows-native toolchain
         uses: actions/upload-artifact@v4

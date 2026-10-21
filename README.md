@@ -179,17 +179,18 @@ The WSL native UCRT build used the following upstream source snapshot:
 The [UCRT Toolchain Build](.github/workflows/ucrt-build.yml) workflow
 repeats this build on an `ubuntu-24.04-arm` Linux runner. Start it manually
 from **Actions > UCRT Toolchain Build > Run workflow**. No WSL or Windows
-runner is needed: both toolchains are compiled on Linux.
+runner is needed: all compilation runs on Linux.
 GitHub requires a new manually dispatched workflow to be present on the
 repository's default branch before it can be started.
 
-The workflow pins the four upstream commits listed above, builds both
-toolchains with `CRT=ucrt`, cross-compiles the existing toolchain tests,
+The workflow pins the four upstream commits listed above, builds the
+Windows-native toolchain with `CRT=ucrt`, cross-compiles the existing toolchain tests,
 and checks that the native executables and DLLs are Windows Arm64 PE
 files. It does not execute Windows binaries on the Linux runner.
+The Linux-hosted cross-compiler is only an internal bootstrap dependency;
+it is not packaged or published by this workflow.
 
-Download either the `aarch64-w64-mingw32-ucrt-linux-arm64` or
-`aarch64-w64-mingw32-ucrt-windows-arm64` artifact. Each contains a
+Download the `aarch64-w64-mingw32-ucrt-windows-arm64` artifact. It contains a
 toolchain archive, its SHA-256 checksum, and the source revisions and
 native-patch checksums. Build logs are uploaded even if the build fails.
 Artifacts are retained for three days. This workflow does not change the
